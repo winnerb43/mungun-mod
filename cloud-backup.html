@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Санхүүгийн мод — өөрийн cloud нөөц тохируулах</title>
+  <meta name="description" content="Санхүүгийн мод апп-ын шифрлэсэн нөөцийг өөрийн Supabase төсөлд хадгалах заавар.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <p class="nav"><a href="./">← Санхүүгийн мод</a></p>
+
+  <section class="card">
+    <h1>Өөрийн cloud нөөц</h1>
+    <p class="muted">Ахисан түвшний, заавал биш боломж</p>
+
+    <p>Апп нөөц файлыг таны оруулсан нууц үгээр утсан дээр шифрлээд, <strong>таны өөрийн</strong> Supabase төсөл рүү илгээж
+      чадна. Сервер нь таных бөгөөд зөвхөн шифрлэгдсэн файл хадгална. Бид тэр серверт хандах эрхгүй.</p>
+    <p>Энгийн хэрэглээнд Тохиргоо → "Нөөцлөх ба сэргээх" хэсгийн нөөц файл хангалттай. Доорх тохиргоог компьютер дээрээс хийхэд
+      10 орчим минут зарцуулна.</p>
+  </section>
+
+  <section class="card">
+    <h2>Тохируулах алхам</h2>
+    <ol>
+      <li><a href="https://supabase.com" rel="noopener">supabase.com</a> дээр бүртгүүлж, шинэ төсөл (New project) үүсгэнэ. Өөр
+        зорилгоор ашигладаг төслөөсөө тусад нь үүсгээрэй.</li>
+      <li>Төслийн <strong>SQL Editor</strong>-т доорх SQL-ийг бүхэлд нь хуулж тавиад <strong>Run</strong> дарна. Энэ нь хувийн
+        "backups" сан үүсгэж, нэвтэрсэн хэрэглэгч зөвхөн өөрийн хавтсыг унших, бичих, устгах дүрэм тогтооно.</li>
+      <li><strong>Authentication → Sign In / Providers</strong> хэсэгт "Allow new users to sign up"-ийг унтраана.</li>
+      <li><strong>Authentication → Users → Add user</strong>: и-мэйл, нууц үгээ оруулж (Auto Confirm) хэрэглэгч үүсгэнэ.</li>
+      <li><strong>Project Settings → API</strong> хэсгээс Project URL болон anon (publishable) key-г хуулж, апп-ын
+        Тохиргоо → "Нөөцлөх ба сэргээх" → "Өөрийн cloud нөөц" дэлгэцэд 4-р алхмын и-мэйл, нууц үгтэй хамт оруулна.</li>
+    </ol>
+
+    <h3>SQL</h3>
+<pre><code>-- 1. Хувийн сан (bucket)
+insert into storage.buckets (id, name, public)
+values ('backups', 'backups', false)
+on conflict (id) do nothing;
+
+-- 2. Зөвхөн өөрийн хавтас (эхний хавтас = auth.uid())
+create policy "backups: own read" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+create policy "backups: own insert" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+create policy "backups: own delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);</code></pre>
+  </section>
+
+  <section class="card">
+    <h2>Мэдэх зүйлс</h2>
+    <ul>
+      <li>Нөөцийн нууц үгээ мартвал файлыг сэргээх боломжгүй. Найдвартай газар хадгална уу.</li>
+      <li>Апп Supabase-ийн нууц үгийг хадгалдаггүй, зөвхөн нэвтрэлтийн токенийг утасны хамгаалагдсан санд хадгална.</li>
+      <li>Сүүлийн 10 нөөц хадгалагдаж, хуучин нь автоматаар устна.</li>
+      <li>Supabase-ийн үнэгүй төсөл 7 хоног ашиглагдахгүй бол түр зогсдог. Апп-ын "Автомат нөөц"-ийг асаавал өдөр бүр нөөцөлж,
+        төслийг идэвхтэй байлгана.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <a href="privacy.html">Нууцлалын бодлого · Privacy Policy</a><br>
+    © 2026 Вишнфанд ББСБ ХХК
+  </footer>
+</main>
+</body>
+</html>
